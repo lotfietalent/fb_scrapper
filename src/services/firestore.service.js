@@ -109,11 +109,12 @@ export async function savePost(pageId, pageName, post) {
 export async function getLatestKnownPost(pageId) {
   const snap = await db.collection(COL.posts)
     .where('pageId', '==', pageId)
-    .orderBy('scrapedAt', 'desc')
-    .limit(1)
     .get();
   if (snap.empty) return null;
-  return snap.docs[0].data();
+  const sorted = snap.docs.sort((a, b) =>
+    (b.data().scrapedAt?.toMillis() ?? 0) - (a.data().scrapedAt?.toMillis() ?? 0)
+  );
+  return sorted[0].data();
 }
 
 // ─── NETTOYAGE ───────────────────────────────────────────────
@@ -131,14 +132,17 @@ export async function cleanupOldPosts(pageId) {
   cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
   const cutoffTs = Timestamp.fromDate(cutoffDate);
 
-  // Récupérer tous les posts de la page, triés du plus récent au plus ancien
+  // Récupérer les posts de la page et trier en mémoire (évite un index composite Firestore)
   const snap = await db.collection(COL.posts)
     .where('pageId', '==', pageId)
-    .orderBy('scrapedAt', 'desc')
     .get();
 
+  const sortedDocs = [...snap.docs].sort((a, b) =>
+    (b.data().scrapedAt?.toMillis() ?? 0) - (a.data().scrapedAt?.toMillis() ?? 0)
+  );
+
   const toDelete = [];
-  snap.docs.forEach((doc, index) => {
+  sortedDocs.forEach((doc, index) => {
     const data = doc.data();
     const isOld = data.scrapedAt && data.scrapedAt.toMillis() < cutoffTs.toMillis();
     const isExcess = index >= maxPostsPerPage;
