@@ -1,0 +1,20 @@
+{
+  "name": "fb-scrapper",
+  "version": "1.0.0",
+  "description": "Scraper automatique des publications de pages Facebook publiques vers Firebase Firestore",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "seed": "node src/scripts/seed-pages.js",
+    "test:scrape": "node src/scripts/test-scrape.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "playwright": "^1.49.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+

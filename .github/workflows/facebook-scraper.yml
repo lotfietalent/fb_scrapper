@@ -1,0 +1,64 @@
+name: Facebook Scraper - Daily Collection
+
+on:
+  # Déclenchement quotidien à 11h00 UTC = 12h00 heure tunisienne (UTC+1)
+  schedule:
+    - cron: '0 11 * * *'
+
+  # Déclenchement manuel depuis GitHub
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Activer les logs debug'
+        required: false
+        default: 'false'
+        type: boolean
+
+# Empêcher deux exécutions simultanées du même workflow
+concurrency:
+  group: facebook-scraper
+  cancel-in-progress: false   # Ne pas annuler une collecte en cours
+
+jobs:
+  scrape:
+    name: Collect Facebook Posts
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # Timeout global : 90 minutes pour 142 pages
+
+    steps:
+      # 1. Checkout du code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Installation de Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Installation des dépendances npm
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Installation de Chromium pour Playwright
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      # 5. Lancement du scraper
+      - name: Run Facebook Scraper
+        env:
+          FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          DEBUG: ${{ github.event.inputs.debug || 'false' }}
+        run: node src/index.js
+
+      # 6. Upload des logs en cas d'échec
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-logs-${{ github.run_id }}
+          path: '*.log'
+          retention-days: 7
+
