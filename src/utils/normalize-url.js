@@ -4,37 +4,38 @@
 
 /**
  * Normalise une URL Facebook pour comparaison stable.
- * Supprime les paramètres de tracking (?__cft__, ?__tn__, etc.)
- * et les ancres.
+ * Conserve les paramètres identifiants (id, story_fbid, fbid, v)
+ * et supprime les paramètres de tracking (__cft__, __tn__, etc.).
  */
 export function normalizeUrl(url) {
   if (!url) return '';
   try {
     const u = new URL(url);
-    // Garder uniquement pathname + paramètre id si présent (profils)
     const cleanParams = new URLSearchParams();
-    if (u.searchParams.has('id')) {
-      cleanParams.set('id', u.searchParams.get('id'));
+    for (const key of ['story_fbid', 'id', 'fbid', 'v']) {
+      if (u.searchParams.has(key)) {
+        cleanParams.set(key, u.searchParams.get(key));
+      }
     }
     const qs = cleanParams.toString();
-    return `${u.origin}${u.pathname}${qs ? '?' + qs : ''}`.toLowerCase();
+    return `${u.origin}${u.pathname}${qs ? '?' + qs : ''}`;
   } catch {
-    return url.split('?')[0].split('#')[0].toLowerCase();
+    return url.split('?')[0].split('#')[0];
   }
 }
 
 /**
- * Extrait l'ID numérique Facebook d'une URL de post si disponible.
- * Ex: /permalink/123456 → "123456"
- *     /posts/123456     → "123456"
+ * Extrait l'ID Facebook d'une URL de post si disponible.
  */
 export function extractPostId(url) {
   if (!url) return null;
   const patterns = [
-    /\/posts\/(\d+)/,
+    /\/posts\/(pfbid[A-Za-z0-9]+|\d+)/,
     /\/permalink\/(\d+)/,
-    /story_fbid=(\d+)/,
-    /\/pfbid([A-Za-z0-9]+)/,
+    /story_fbid=(pfbid[A-Za-z0-9]+|\d+)/,
+    /\/reel\/(\d+)/,
+    /\/videos\/(\d+)/,
+    /\/(pfbid[A-Za-z0-9]+)/,
   ];
   for (const p of patterns) {
     const m = url.match(p);
@@ -42,4 +43,3 @@ export function extractPostId(url) {
   }
   return null;
 }
-
