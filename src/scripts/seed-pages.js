@@ -7,7 +7,7 @@
 // Idempotent : ne recrée pas les pages déjà existantes.
 // ============================================================
 
-import '../config/firebase.js';
+import '../config/firebase.js';  // charge .env + initialise Firebase
 import { db }       from '../config/firebase.js';
 import { CONFIG }   from '../config.js';
 import { logger }   from '../utils/logger.js';

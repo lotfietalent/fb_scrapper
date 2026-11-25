@@ -3,6 +3,25 @@
 // Toutes les valeurs sont configurables via variables d'environnement
 // ============================================================
 
+// Chargement automatique du fichier .env en développement local
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __dir  = dirname(fileURLToPath(import.meta.url));
+const envFile = resolve(__dir, '..', '.env');
+if (existsSync(envFile)) {
+  readFileSync(envFile, 'utf8').split('\n').forEach(line => {
+    const clean = line.replace(/\r$/, '').trim();
+    if (!clean || clean.startsWith('#')) return;
+    const idx = clean.indexOf('=');
+    if (idx === -1) return;
+    const key = clean.substring(0, idx).trim();
+    const val = clean.substring(idx + 1).trim();
+    if (key && !process.env[key]) process.env[key] = val;
+  });
+}
+
 export const CONFIG = {
   // --- Firebase ---
   projectId: process.env.FIREBASE_PROJECT_ID || 'dourous-84a2e',
